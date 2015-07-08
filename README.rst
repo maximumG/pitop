@@ -11,7 +11,7 @@ Links
 
 You can browse the Itop REST API documentation at https://wiki.openitop.org/doku.php?id=advancedtopics:rest_json
 
-Dependancies
+Dependencies
 ============
 
 - Python >= 2.6
