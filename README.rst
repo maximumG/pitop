@@ -20,16 +20,16 @@ Dependencies
 Usage
 =====
 
-Request
--------
+Search
+------
 
-The request/search operation is done trough the *request* function available in the pitop module. The function returns a list
+The search/get operation is done trough the *search* function available in the pitop module. The function returns a list
 of dynamic objects created from the JSON returned from the REST API. You can use it as the following example.
 
 .. code-block:: python
 
 	import pitop
-	objects = pitop.request("http://url/rest.api", "user", "password", object="ItopObject")
+	objects = pitop.search("http://url/rest.api", "user", "password", object="ItopObject")
 	print type(objects)
 	print objects[0]
 
@@ -45,12 +45,18 @@ A more advanced example is using the optional argument of the *request* function
 .. code-block:: python
 
 	import pitop
-	objects = pitop.request("http://url/rest.api", "user", "password", object="ItopObject", filter="my filter", output_fields=["field1", "field2"])
+	objects = pitop.search("http://url/rest.api", "user", "password", object="ItopObject", filter="my filter", output_fields=["field1", "field2"])
 	print type(objects)
 	print objects[0]
 
 The *filter* argument is used to filter out the results from Itop API call.
 The *output_fields* argument is a list of the object's attribute you want Itop to return - by default all object's attribute are returned.
+
+Also note that if anything goes wrong during the search, a *PitopError* will be raise with:
+
+- The error code as *PitopError.code* attribute
+- The error message as *PitoError.message* attribute
+- The calling url as *PitopError.url* attribute
 
 CSV parsing
 -----------

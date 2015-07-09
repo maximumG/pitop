@@ -29,7 +29,7 @@ import requests
 
 DEFAULT_VERSION = "1.0"
 
-class RequestorError(BaseException):
+class PitopError(BaseException):
     """
     Class used to wrapped up most common REST API error comming from Itop as response to a CRUD operation.
     See the **Error codes** section of the the Itop REST API at https://wiki.openitop.org/doku.php?id=advancedtopics:rest_json
@@ -66,7 +66,7 @@ class RequestorError(BaseException):
         """
         Constructor of the RequestorError
         """
-        self.status = RequestorError.REQUESTOR_ERROR.get(code, RequestorError.REQUESTOR_ERROR[99])
+        self.status = PitopError.REQUESTOR_ERROR.get(code, PitopError.REQUESTOR_ERROR[99])
         self.url = url
         self.message = message
 
@@ -76,7 +76,7 @@ class RequestorError(BaseException):
         return "%s - %s : %s" %(self.status, self.url, self.message)
 
 
-def request(url, username, password, object="", filter="", output_fields=[], timeout=30, itop_version=DEFAULT_VERSION):
+def search(url, username, password, object="", filter="", output_fields=[], timeout=30, itop_version=DEFAULT_VERSION):
     """
     Search for any Itop object using the REST API. The function is using the *core/get* operation of Itop.
     The function will interact with the Itop API and create dynamic python object based on Itop object returned.
@@ -116,22 +116,22 @@ def request(url, username, password, object="", filter="", output_fields=[], tim
     try:
         response = requests.post(url, data=payload, timeout=timeout)
     except requests.exceptions.Timeout as timeout:
-        raise RequestorError(99, url, "Request timeout error")
+        raise PitopError(99, url, "Request timeout error")
 
     # Getting anything than HTTP 200 raise an Exception
     if response.status_code != 200:
-        raise RequestorError(99, url, response.status_code)
+        raise PitopError(99, url, response.status_code)
 
     json_objects = response.json()
     # Getting anything than '0' ('success') in the code keyword raise an Exception
     if json_objects["code"] != 0:
-        raise RequestorError(json_objects["code"], url, json_objects["message"])
+        raise PitopError(json_objects["code"], url, json_objects["message"])
 
     # Dynamic creation of python object using metaclass feature, based on Itop object and returned JSON
-    itop_object = type(object, (), {"__init__": factory, "__getattr__": getattr, "__str__": to_string})
+    itop_object = type(object, (), {"__init__": factory, "__getattr__": get_attribute, "__str__": to_string})
 
     for json_object in json_objects["objects"]:
-        itop_objects.append(itop_object(json_objects["objects"][json_object]["fields"]))
+        itop_objects.append(itop_object(json_objects["objects"],[json_object]["fields"]))
 
     return itop_objects
 
@@ -147,7 +147,7 @@ def factory(class_name, dict):
     """
     class_name.__dict__ = dict
 
-def getattr(class_name, attribute):
+def get_attribute(class_name, attribute):
     """
     Magic method that will be used by the Metaclass created for Itop object.
     The function will avoid raising an exception if the atrtibute requested does not exist but rather return None.
@@ -165,7 +165,7 @@ def to_string(class_name):
     """
     string = "%s : { " % type(class_name)
     for attribute, value in class_name.__dict__.iteritems():
-        string += "%s : %s, " %(attribute, value)
+        string += "%s : %s, " % (attribute, value)
     string += "}"
     return string
 
@@ -188,7 +188,7 @@ def parse_csv(file, object="", char_to_replace="(\s|\->|\-)"):
     # Empty Itop object list
     itop_objects = []
 
-    itop_object = type(object, (), {"__init__": factory, "__getattr__": getattr, "__str__": to_string})
+    itop_object = type(object, (), {"__init__": factory, "__getattr__": get_attribute, "__str__": to_string})
 
     with open(file, "rb") as csvfh:
         csv_file = csv.reader(csvfh)
